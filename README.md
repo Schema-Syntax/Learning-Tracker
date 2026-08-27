@@ -2,7 +2,7 @@
 
 A personal learning management system for tracking courses, certifications, and professional development across platforms — built as a single, self-contained HTML file.
 
-**[Live Demo →](https://yourusername.github.io/learning-tracker)**
+**[Live Demo Coming Soon →](https://github.com/Schema-Syntax/Learning-Tracker/)**
 
 ---
 
