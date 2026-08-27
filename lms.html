@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Learning Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0D1B2A;
+      --surface: #152234;
+      --surface2: #1C2F44;
+      --surface3: #243750;
+      --border: #2C4260;
+      --text: #E2EAF0;
+      --text-muted: #6B8BA4;
+      --text-dim: #4A6A82;
+      --accent: #4A9B8E;
+      --accent-dim: rgba(74,155,142,0.12);
+      --accent-glow: rgba(74,155,142,0.25);
+      --status-not-started: #4A6A82;
+      --status-in-progress: #4A9B8E;
+      --status-completed: #6AAF5E;
+      --status-paused: #7B6BA8;
+      --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      --radius: 6px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      font-size: 14px;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    .app-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 52px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .app-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* BUTTONS */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: var(--radius);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      font-family: var(--font-ui);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--text); }
+
+    .btn-danger {
+      background: transparent;
+      color: #C0546A;
+      border: 1px solid transparent;
+    }
+    .btn-danger:hover { border-color: #C0546A; }
+
+    /* TOOLBAR */
+    .toolbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toolbar-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .filter-select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 5px 10px;
+      font-size: 12px;
+      font-family: var(--font-ui);
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .filter-select:focus { border-color: var(--accent); }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 160px;
+      max-width: 280px;
+    }
+
+    .search-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 5px 10px 5px 28px;
+      color: var(--text);
+      font-size: 12px;
+      font-family: var(--font-ui);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-input::placeholder { color: var(--text-dim); }
+
+    .search-icon {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-dim);
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .toolbar-sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 0 2px;
+    }
+
+    /* STATS BAR — signature element */
+    .stats-bar {
+      padding: 10px 24px;
+      display: flex;
+      gap: 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .stat {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .stat-number {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .stat-number.accent { color: var(--accent); }
+    .stat-number.in-progress { color: var(--status-in-progress); }
+    .stat-number.completed { color: var(--status-completed); }
+
+    .stats-sep { width: 1px; height: 28px; background: var(--border); }
+
+    .progress-block {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 180px;
+    }
+
+    .progress-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+    }
+
+    .progress-pct {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .progress-bar-track {
+      height: 4px;
+      background: var(--surface2);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.4s ease;
+    }
+
+    .progress-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    /* MAIN CONTENT */
+    .main {
+      padding: 20px 24px;
+      max-width: 1100px;
+    }
+
+    /* ITEM LIST */
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .item-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: auto 1fr auto auto;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      position: relative;
+    }
+
+    .item-card:hover {
+      border-color: var(--accent);
+      background: var(--surface2);
+    }
+
+    .item-card.dragging { opacity: 0.4; }
+    .item-card.drag-over { border-top: 2px solid var(--accent); }
+
+    .drag-grip {
+      color: var(--border);
+      cursor: grab;
+      font-size: 14px;
+      padding: 0 2px;
+      transition: color 0.12s;
+    }
+    .item-card:hover .drag-grip { color: var(--text-dim); }
+
+    .item-main { min-width: 0; }
+
+    .item-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 3px;
+    }
+
+    .item-title a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .item-title a:hover { color: var(--accent); }
+
+    .item-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+      background: var(--surface2);
+      padding: 2px 7px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+    }
+
+    .meta-chip.category {
+      background: var(--accent-dim);
+      border-color: var(--accent-glow);
+      color: var(--accent);
+    }
+
+    .item-duration {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    .item-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .item-card:hover .item-actions { opacity: 1; }
+
+    .action-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      padding: 3px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.12s;
+      font-family: var(--font-ui);
+    }
+    .action-btn:hover { border-color: var(--accent); color: var(--text); }
+    .action-btn.danger:hover { border-color: #C0546A; color: #C0546A; }
+
+    /* STATUS BADGE */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 3px;
+      white-space: nowrap;
+      cursor: pointer;
+      border: none;
+      font-family: var(--font-ui);
+      transition: opacity 0.15s;
+    }
+    .status-badge:hover { opacity: 0.8; }
+
+    .status-Not-Started { background: rgba(74,106,130,0.2); color: var(--status-not-started); }
+    .status-In-Progress { background: rgba(74,155,142,0.2); color: var(--status-in-progress); }
+    .status-Completed { background: rgba(106,175,94,0.2); color: var(--status-completed); }
+    .status-Paused { background: rgba(123,107,168,0.2); color: var(--status-paused); }
+
+    /* CERT BADGE */
+    .cert-badge {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+    }
+    .cert-badge.yes { color: var(--accent); border-color: var(--accent-glow); }
+
+    /* NOTES */
+    .item-notes {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--text-dim);
+    }
+
+    .empty-state-icon { font-size: 36px; margin-bottom: 12px; }
+    .empty-state-title { font-size: 15px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .empty-state-body { font-size: 13px; }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      letter-spacing: 0.04em;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-field.full { grid-column: 1 / -1; }
+
+    .form-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .form-input, .form-select, .form-textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      padding: 7px 10px;
+      font-size: 13px;
+      font-family: var(--font-ui);
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--accent);
+    }
+
+    .form-input::placeholder { color: var(--text-dim); }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    /* SETTINGS MODAL */
+    .settings-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .settings-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 12px;
+    }
+
+    .settings-add {
+      display: flex;
+      gap: 8px;
+    }
+
+    .settings-add input {
+      flex: 1;
+    }
+
+    /* DATES ROW */
+    .dates-row {
+      display: flex;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      margin-top: 3px;
+    }
+
+    /* HIDDEN */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- HIDDEN FILE INPUT for Firefox/Safari fallback -->
+<input type="file" id="fallbackFileInput" accept=".json" style="display:none" onchange="handleFallbackImport(event)">
+
+<!-- HEADER -->
+<div class="app-header">
+  <div class="app-title">Learning Tracker</div>
+  <div class="header-actions">
+    <span id="fileStatus" style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono);margin-right:4px;"></span>
+    <button class="btn btn-ghost" id="exportBtn" onclick="exportFile()" style="display:none;">⬇ Export</button>
+    <button class="btn btn-ghost" onclick="openFile()">📂 Open</button>
+    <button class="btn btn-ghost" onclick="newFile()">+ New File</button>
+    <button class="btn btn-ghost" onclick="openSettings()">⚙ Settings</button>
+    <button class="btn btn-primary" onclick="openAddModal()">+ Add Course</button>
+  </div>
+</div>
+
+<!-- WELCOME STATE -->
+<div id="welcomeState" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:70vh;padding:40px;text-align:center;">
+  <div style="font-size:40px;margin-bottom:16px;">📚</div>
+  <div style="font-size:18px;font-weight:700;color:var(--text);margin-bottom:8px;">Learning Tracker</div>
+  <div style="font-size:13px;color:var(--text-muted);max-width:420px;margin-bottom:28px;line-height:1.6;">
+    Your data lives in a local JSON file — portable, private, and yours.<br>
+    Open an existing file or create a new one to get started.
+  </div>
+  <div style="display:flex;gap:12px;">
+    <button class="btn btn-ghost" onclick="openFile()" style="padding:10px 24px;font-size:13px;">📂 Open Existing File</button>
+    <button class="btn btn-primary" id="newFileBtn" onclick="newFile()" style="padding:10px 24px;font-size:13px;">+ Create New File</button>
+  </div>
+  <div id="fallbackNote" style="display:none;margin-top:20px;font-size:11px;color:var(--text-dim);max-width:380px;line-height:1.6;">
+    Your browser uses import/export mode. Open a file to load data, or start fresh and use the <strong style="color:var(--text-muted)">⬇ Export</strong> button in the header to save your changes.
+  </div>
+</div>
+
+<!-- APP CONTENT -->
+<div id="appContent" class="hidden">
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">⌕</span>
+    <input class="search-input" id="searchInput" type="text" placeholder="Search courses and notes..." oninput="applyFilters()">
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <span class="toolbar-label">Status</span>
+    <select class="filter-select" id="filterStatus" onchange="applyFilters()">
+      <option value="">All</option>
+      <option>Not Started</option>
+      <option>In Progress</option>
+      <option>Completed</option>
+      <option>Paused</option>
+    </select>
+  </div>
+  <div class="toolbar-group">
+    <span class="toolbar-label">Platform</span>
+    <select class="filter-select" id="filterPlatform" onchange="applyFilters()">
+      <option value="">All</option>
+    </select>
+  </div>
+  <div class="toolbar-group">
+    <span class="toolbar-label">Category</span>
+    <select class="filter-select" id="filterCategory" onchange="applyFilters()">
+      <option value="">All</option>
+    </select>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <span class="toolbar-label">Sort</span>
+    <select class="filter-select" id="sortBy" onchange="applyFilters()">
+      <option value="manual">Manual Order</option>
+      <option value="dateAdded">Date Added</option>
+      <option value="dateStarted">Date Started</option>
+      <option value="dateCompleted">Date Completed</option>
+      <option value="title">Title</option>
+      <option value="platform">Platform</option>
+      <option value="status">Status</option>
+    </select>
+  </div>
+</div>
+
+<!-- STATS BAR -->
+<div class="stats-bar" id="statsBar"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="item-list" id="itemList"></div>
+</div>
+
+</div><!-- end #appContent -->
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay hidden" id="formModal">
+  <div class="modal">
+    <div class="modal-title" id="formModalTitle">Add Course</div>
+    <div class="form-grid">
+      <div class="form-field full">
+        <label class="form-label">URL</label>
+        <input class="form-input" id="fieldUrl" type="url" placeholder="https://..." oninput="tryFetchTitle()">
+      </div>
+      <div class="form-field full">
+        <label class="form-label">Title</label>
+        <input class="form-input" id="fieldTitle" type="text" placeholder="Course title">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Platform</label>
+        <select class="form-select" id="fieldPlatform"></select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Category</label>
+        <select class="form-select" id="fieldCategory"></select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Status</label>
+        <select class="form-select" id="fieldStatus">
+          <option>Not Started</option>
+          <option>In Progress</option>
+          <option>Completed</option>
+          <option>Paused</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Duration</label>
+        <input class="form-input" id="fieldDuration" type="text" placeholder="e.g. 1h 20m">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Date Started</label>
+        <input class="form-input" id="fieldDateStarted" type="date">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Date Completed</label>
+        <input class="form-input" id="fieldDateCompleted" type="date">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Certificate / Badge</label>
+        <select class="form-select" id="fieldCertificate">
+          <option>N/A</option>
+          <option>No</option>
+          <option>Yes</option>
+        </select>
+      </div>
+      <div class="form-field full">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="fieldNotes" placeholder="Optional notes..."></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('formModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay hidden" id="settingsModal">
+  <div class="modal">
+    <div class="modal-title">Settings</div>
+
+    <div style="margin-bottom: 20px;">
+      <div class="form-label" style="margin-bottom: 8px;">Platforms</div>
+      <div class="settings-list" id="platformList"></div>
+      <div class="settings-add">
+        <input class="form-input" id="newPlatform" type="text" placeholder="Add platform...">
+        <button class="btn btn-ghost" onclick="addPlatform()">Add</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <div class="form-label" style="margin-bottom: 8px;">Categories</div>
+      <div class="settings-list" id="categoryList"></div>
+      <div class="settings-add" style="gap: 8px;">
+        <input class="form-input" id="newCategoryEmoji" type="text" placeholder="🎯" style="width: 60px; flex: none;">
+        <input class="form-input" id="newCategoryLabel" type="text" placeholder="Category name...">
+        <button class="btn btn-ghost" onclick="addCategory()">Add</button>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="closeModal('settingsModal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM MODAL -->
+<div class="modal-overlay hidden" id="deleteModal">
+  <div class="modal" style="max-width: 360px;">
+    <div class="modal-title">Remove this course?</div>
+    <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 20px;" id="deleteModalBody"></p>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Remove</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── DATA ────────────────────────────────────────────────────────────────────
+
+  const STATUS_WEIGHTS = {
+    'Not Started': 0,
+    'Paused': 1,
+    'In Progress': 2,
+    'Completed': 3
+  };
+  const MAX_WEIGHT = 3;
+  const STATUS_CYCLE = ['Not Started', 'In Progress', 'Paused', 'Completed'];
+
+  const DEFAULT_PLATFORMS = [
+    'LinkedIn Learning', 'Trailhead', 'YouTube',
+    'Coursera', 'DeepLearning.AI', 'edX', 'Other'
+  ];
+
+  const DEFAULT_CATEGORIES = [
+    { label: 'AI / Automation', emoji: '🤖' },
+    { label: 'BI / Data', emoji: '📊' },
+    { label: 'Operations / Process', emoji: '⚙️' },
+    { label: 'Salesforce', emoji: '☁️' },
+    { label: 'SQL / Python', emoji: '🐍' },
+    { label: 'Product Management', emoji: '📦' },
+    { label: 'Project Management', emoji: '🗂️' },
+    { label: 'Other', emoji: '🌐' }
+  ];
+
+  // ─── FILE HANDLING ───────────────────────────────────────────────────────────
+
+  let fileHandle = null;
+  let appData = {
+    items: [],
+    platforms: [...DEFAULT_PLATFORMS],
+    categories: [...DEFAULT_CATEGORIES]
+  };
+
+  function hasFSA() {
+    return typeof window.showOpenFilePicker === 'function';
+  }
+
+  function loadData() {
+    return appData;
+  }
+
+  async function saveData(data) {
+    appData = data;
+    if (!hasFSA() || !fileHandle) {
+      updateFileStatus('unsaved');
+      return;
+    }
+    try {
+      const writable = await fileHandle.createWritable();
+      await writable.write(JSON.stringify(data, null, 2));
+      await writable.close();
+      updateFileStatus('saved');
+    } catch (e) {
+      console.error('Save failed:', e);
+      updateFileStatus('error');
+    }
+  }
+
+  function updateFileStatus(state) {
+    const el = document.getElementById('fileStatus');
+    if (!el) return;
+    if (state === 'saved') {
+      el.textContent = '✓ Saved';
+      el.style.color = 'var(--accent)';
+      setTimeout(() => {
+        el.textContent = fileHandle ? fileHandle.name : '';
+        el.style.color = 'var(--text-dim)';
+      }, 1500);
+    } else if (state === 'unsaved') {
+      el.textContent = '● Unsaved — click Export to save';
+      el.style.color = '#B8924A';
+    } else if (state === 'error') {
+      el.textContent = '⚠ Save failed';
+      el.style.color = '#C0546A';
+    } else {
+      el.textContent = fileHandle ? fileHandle.name : '';
+      el.style.color = 'var(--text-dim)';
+    }
+  }
+
+  function showApp() {
+    document.getElementById('welcomeState').classList.add('hidden');
+    document.getElementById('appContent').classList.remove('hidden');
+    const exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) exportBtn.style.display = hasFSA() ? 'none' : '';
+  }
+
+  function loadParsedData(parsed) {
+    appData = {
+      items: parsed.items || [],
+      platforms: parsed.platforms || [...DEFAULT_PLATFORMS],
+      categories: parsed.categories || [...DEFAULT_CATEGORIES]
+    };
+    showApp();
+    render();
+  }
+
+  async function openFile() {
+    if (hasFSA()) {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: 'Learning Tracker Data', accept: { 'application/json': ['.json'] } }],
+          multiple: false
+        });
+        fileHandle = handle;
+        const file = await fileHandle.getFile();
+        const text = await file.text();
+        loadParsedData(JSON.parse(text));
+        updateFileStatus('idle');
+      } catch (e) {
+        if (e.name !== 'AbortError') console.error('Open failed:', e);
+      }
+    } else {
+      document.getElementById('fallbackFileInput').click();
+    }
+  }
+
+  async function newFile() {
+    if (hasFSA()) {
+      try {
+        fileHandle = await window.showSaveFilePicker({
+          suggestedName: 'learning-tracker-data.json',
+          types: [{ description: 'Learning Tracker Data', accept: { 'application/json': ['.json'] } }]
+        });
+        appData = { items: [], platforms: [...DEFAULT_PLATFORMS], categories: [...DEFAULT_CATEGORIES] };
+        await saveData(appData);
+        showApp();
+        render();
+      } catch (e) {
+        if (e.name !== 'AbortError') console.error('New file failed:', e);
+      }
+    } else {
+      appData = { items: [], platforms: [...DEFAULT_PLATFORMS], categories: [...DEFAULT_CATEGORIES] };
+      showApp();
+      updateFileStatus('unsaved');
+      render();
+    }
+  }
+
+  function handleFallbackImport(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        loadParsedData(JSON.parse(evt.target.result));
+        updateFileStatus('idle');
+      } catch (err) {
+        alert('Could not read file. Make sure it is a valid Learning Tracker JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }
+
+  function exportFile() {
+    const json = JSON.stringify(appData, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'learning-tracker-data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    updateFileStatus('idle');
+  }
+
+  function generateId() {
+    return 'item-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+  }
+
+  // ─── STATE ───────────────────────────────────────────────────────────────────
+
+  let editingId = null;
+  let deleteTargetId = null;
+  let dragSrcId = null;
+
+  // ─── RENDER ──────────────────────────────────────────────────────────────────
+
+  function getStatusClass(status) {
+    return 'status-' + status.replace(/\s/g, '-');
+  }
+
+  function getStatusDot(status) {
+    const dots = {
+      'Not Started': '○',
+      'In Progress': '◑',
+      'Completed': '●',
+      'Paused': '◐'
+    };
+    return dots[status] || '○';
+  }
+
+  function getCategoryInfo(data, label) {
+    return data.categories.find(c => c.label === label) || { label, emoji: '📚' };
+  }
+
+  function renderStats(data) {
+    const items = data.items;
+    const total = items.length;
+    const inProgress = items.filter(i => i.status === 'In Progress').length;
+    const completed = items.filter(i => i.status === 'Completed').length;
+    const certs = items.filter(i => i.certificate === 'Yes').length;
+
+    const totalPoints = total * MAX_WEIGHT;
+    const earnedPoints = items.reduce((sum, i) => sum + (STATUS_WEIGHTS[i.status] ?? 0), 0);
+    const pct = totalPoints > 0 ? ((earnedPoints / totalPoints) * 100).toFixed(1) : '0.0';
+
+    document.getElementById('statsBar').innerHTML = `
+      <div class="stat">
+        <span class="stat-number">${total}</span>
+        <span class="stat-label">Total</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number in-progress">${inProgress}</span>
+        <span class="stat-label">In Progress</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number completed">${completed}</span>
+        <span class="stat-label">Completed</span>
+      </div>
+      <div class="stat">
+        <span class="stat-number accent">${certs}</span>
+        <span class="stat-label">Certs / Badges</span>
+      </div>
+      <div class="stats-sep"></div>
+      <div class="progress-block">
+        <div class="progress-header">
+          <span class="progress-label">Momentum</span>
+          <span class="progress-pct">${pct}%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono);margin-top:2px;">
+          ${earnedPoints} / ${totalPoints} pts
+        </div>
+      </div>
+    `;
+  }
+
+  function renderList(items, data) {
+    const container = document.getElementById('itemList');
+    container.innerHTML = '';
+
+    if (items.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📚</div>
+          <div class="empty-state-title">Nothing here yet</div>
+          <div class="empty-state-body">Add your first course to get started.</div>
+        </div>
+      `;
+      return;
+    }
+
+    items.forEach(item => {
+      const cat = getCategoryInfo(data, item.category);
+      const card = document.createElement('div');
+      card.className = 'item-card';
+      card.dataset.id = item.id;
+      card.draggable = true;
+
+      const datesHtml = [
+        item.dateStarted ? `Started ${item.dateStarted}` : '',
+        item.dateCompleted ? `Completed ${item.dateCompleted}` : ''
+      ].filter(Boolean).join('  ·  ');
+
+      card.innerHTML = `
+        <div class="drag-grip" title="Drag to reorder">⠿</div>
+        <div class="item-main">
+          <div class="item-title">
+            ${item.url
+              ? `<a href="${item.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${item.title || 'Untitled'}</a>`
+              : (item.title || 'Untitled')
+            }
+          </div>
+          <div class="item-meta">
+            <span class="meta-chip">${item.platform || '—'}</span>
+            <span class="meta-chip category">${cat.emoji} ${cat.label}</span>
+            ${item.duration ? `<span class="item-duration">${item.duration}</span>` : ''}
+            ${item.certificate === 'Yes' ? `<span class="cert-badge yes">CERT / BADGE ✓</span>` : ''}
+          </div>
+          ${item.notes ? `<div class="item-notes">${item.notes}</div>` : ''}
+          ${datesHtml ? `<div class="dates-row">${datesHtml}</div>` : ''}
+        </div>
+        <button class="status-badge ${getStatusClass(item.status)}" onclick="cycleStatus(event, '${item.id}')" title="Click to change status">
+          ${getStatusDot(item.status)} ${item.status}
+        </button>
+        <div class="item-actions">
+          <button class="action-btn" onclick="openEditModal(event, '${item.id}')">Edit</button>
+          <button class="action-btn danger" onclick="openDeleteModal(event, '${item.id}')">Remove</button>
+        </div>
+      `;
+
+      // Drag events
+      card.addEventListener('dragstart', e => {
+        dragSrcId = item.id;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        document.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
+      });
+      card.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        document.querySelectorAll('.item-card').forEach(c => c.classList.remove('drag-over'));
+        card.classList.add('drag-over');
+      });
+      card.addEventListener('drop', async e => {
+        e.preventDefault();
+        if (dragSrcId === item.id) return;
+        const data = loadData();
+        const fromIdx = data.items.findIndex(i => i.id === dragSrcId);
+        const toIdx = data.items.findIndex(i => i.id === item.id);
+        const [moved] = data.items.splice(fromIdx, 1);
+        data.items.splice(toIdx, 0, moved);
+        await saveData(data);
+        render();
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  function populateFilterDropdowns(data) {
+    const platformSel = document.getElementById('filterPlatform');
+    const categorySel = document.getElementById('filterCategory');
+    const currentP = platformSel.value;
+    const currentC = categorySel.value;
+
+    platformSel.innerHTML = '<option value="">All Platforms</option>' +
+      data.platforms.map(p => `<option ${p === currentP ? 'selected' : ''}>${p}</option>`).join('');
+
+    categorySel.innerHTML = '<option value="">All Categories</option>' +
+      data.categories.map(c => `<option ${c.label === currentC ? 'selected' : ''}>${c.emoji} ${c.label}</option>`).join('');
+  }
+
+  function applyFilters() {
+    const data = loadData();
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const status = document.getElementById('filterStatus').value;
+    const platform = document.getElementById('filterPlatform').value;
+    const categoryRaw = document.getElementById('filterCategory').value;
+    const category = categoryRaw.replace(/^.\s/, ''); // strip emoji from filter value
+    const sortBy = document.getElementById('sortBy').value;
+
+    let items = [...data.items];
+
+    if (search) {
+      items = items.filter(i =>
+        (i.title || '').toLowerCase().includes(search) ||
+        (i.notes || '').toLowerCase().includes(search)
+      );
+    }
+    if (status) items = items.filter(i => i.status === status);
+    if (platform) items = items.filter(i => i.platform === platform);
+    if (category) items = items.filter(i => i.category === category);
+
+    if (sortBy === 'status') {
+      items.sort((a, b) => (STATUS_WEIGHTS[a.status] ?? 0) - (STATUS_WEIGHTS[b.status] ?? 0));
+    } else if (sortBy !== 'manual') {
+      items.sort((a, b) => {
+        const va = (a[sortBy] || '').toLowerCase();
+        const vb = (b[sortBy] || '').toLowerCase();
+        return va < vb ? -1 : va > vb ? 1 : 0;
+      });
+    }
+
+    renderList(items, data);
+    renderStats(data);
+  }
+
+  function render() {
+    const data = loadData();
+    populateFilterDropdowns(data);
+    applyFilters();
+  }
+
+  // ─── STATUS CYCLE ────────────────────────────────────────────────────────────
+
+  async function cycleStatus(e, id) {
+    e.stopPropagation();
+    const data = loadData();
+    const item = data.items.find(i => i.id === id);
+    if (!item) return;
+    const idx = STATUS_CYCLE.indexOf(item.status);
+    const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+    item.status = next;
+    if (next === 'In Progress' && !item.dateStarted) {
+      item.dateStarted = new Date().toISOString().slice(0, 10);
+    }
+    if (next === 'Completed' && !item.dateCompleted) {
+      item.dateCompleted = new Date().toISOString().slice(0, 10);
+    }
+    await saveData(data);
+    render();
+  }
+
+  // ─── FORM MODAL ──────────────────────────────────────────────────────────────
+
+  function populateFormDropdowns() {
+    const data = loadData();
+    document.getElementById('fieldPlatform').innerHTML =
+      data.platforms.map(p => `<option>${p}</option>`).join('');
+    document.getElementById('fieldCategory').innerHTML =
+      data.categories.map(c => `<option>${c.emoji} ${c.label}</option>`).join('');
+  }
+
+  function openAddModal() {
+    editingId = null;
+    document.getElementById('formModalTitle').textContent = 'Add Course';
+    document.getElementById('fieldUrl').value = '';
+    document.getElementById('fieldTitle').value = '';
+    document.getElementById('fieldDuration').value = '';
+    document.getElementById('fieldStatus').value = 'Not Started';
+    document.getElementById('fieldDateStarted').value = '';
+    document.getElementById('fieldDateCompleted').value = '';
+    document.getElementById('fieldCertificate').value = 'N/A';
+    document.getElementById('fieldNotes').value = '';
+    populateFormDropdowns();
+    document.getElementById('formModal').classList.remove('hidden');
+    document.getElementById('fieldUrl').focus();
+  }
+
+  function openEditModal(e, id) {
+    e.stopPropagation();
+    const data = loadData();
+    const item = data.items.find(i => i.id === id);
+    if (!item) return;
+    editingId = id;
+    document.getElementById('formModalTitle').textContent = 'Edit Course';
+    populateFormDropdowns();
+    document.getElementById('fieldUrl').value = item.url || '';
+    document.getElementById('fieldTitle').value = item.title || '';
+    document.getElementById('fieldDuration').value = item.duration || '';
+    document.getElementById('fieldStatus').value = item.status || 'Not Started';
+    document.getElementById('fieldDateStarted').value = item.dateStarted || '';
+    document.getElementById('fieldDateCompleted').value = item.dateCompleted || '';
+    document.getElementById('fieldCertificate').value = item.certificate || 'N/A';
+    document.getElementById('fieldNotes').value = item.notes || '';
+
+    // Set platform
+    const pSel = document.getElementById('fieldPlatform');
+    for (let opt of pSel.options) {
+      if (opt.value === item.platform) { opt.selected = true; break; }
+    }
+
+    // Set category (match label, accounting for emoji prefix)
+    const cSel = document.getElementById('fieldCategory');
+    for (let opt of cSel.options) {
+      if (opt.value.includes(item.category)) { opt.selected = true; break; }
+    }
+
+    document.getElementById('formModal').classList.remove('hidden');
+  }
+
+  async function saveItem() {
+    const data = loadData();
+    const url = document.getElementById('fieldUrl').value.trim();
+    const title = document.getElementById('fieldTitle').value.trim();
+    const platform = document.getElementById('fieldPlatform').value;
+    const categoryRaw = document.getElementById('fieldCategory').value;
+    const category = categoryRaw.replace(/^.\s/, '');
+    const status = document.getElementById('fieldStatus').value;
+    const duration = document.getElementById('fieldDuration').value.trim();
+    const dateStarted = document.getElementById('fieldDateStarted').value;
+    const dateCompleted = document.getElementById('fieldDateCompleted').value;
+    const certificate = document.getElementById('fieldCertificate').value;
+    const notes = document.getElementById('fieldNotes').value.trim();
+
+    if (!title && !url) {
+      alert('Please add a title or URL.');
+      return;
+    }
+
+    if (editingId) {
+      const item = data.items.find(i => i.id === editingId);
+      if (item) {
+        item.url = url;
+        item.title = title || url;
+        item.platform = platform;
+        item.category = category;
+        item.status = status;
+        item.duration = duration;
+        item.dateStarted = dateStarted;
+        item.dateCompleted = dateCompleted;
+        item.certificate = certificate;
+        item.notes = notes;
+      }
+    } else {
+      data.items.unshift({
+        id: generateId(),
+        url,
+        title: title || url,
+        platform,
+        category,
+        status,
+        duration,
+        dateAdded: new Date().toISOString().slice(0, 10),
+        dateStarted,
+        dateCompleted,
+        certificate,
+        notes
+      });
+    }
+
+    await saveData(data);
+    closeModal('formModal');
+    render();
+  }
+
+  // ─── TITLE FETCH ─────────────────────────────────────────────────────────────
+
+  let fetchTimeout = null;
+  function tryFetchTitle() {
+    clearTimeout(fetchTimeout);
+    fetchTimeout = setTimeout(() => {
+      const url = document.getElementById('fieldUrl').value.trim();
+      const titleField = document.getElementById('fieldTitle');
+      if (!url || titleField.value) return;
+      // Can't reliably fetch cross-origin titles from the browser
+      // Just extract a readable name from the URL as a fallback
+      try {
+        const u = new URL(url);
+        const parts = u.pathname.split('/').filter(Boolean);
+        if (parts.length > 0) {
+          const slug = parts[parts.length - 1]
+            .replace(/[-_]/g, ' ')
+            .replace(/\.\w+$/, '');
+          if (slug.length > 3) {
+            const titleCased = slug
+              .split(' ')
+              .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+              .join(' ');
+            titleField.value = titleCased;
+          }
+        }
+      } catch (e) {}
+    }, 600);
+  }
+
+  // ─── DELETE ──────────────────────────────────────────────────────────────────
+
+  function openDeleteModal(e, id) {
+    e.stopPropagation();
+    const data = loadData();
+    const item = data.items.find(i => i.id === id);
+    deleteTargetId = id;
+    document.getElementById('deleteModalBody').textContent =
+      `"${item?.title || 'This course'}" will be removed from your tracker.`;
+    document.getElementById('deleteModal').classList.remove('hidden');
+  }
+
+  async function confirmDelete() {
+    const data = loadData();
+    data.items = data.items.filter(i => i.id !== deleteTargetId);
+    await saveData(data);
+    closeModal('deleteModal');
+    render();
+  }
+
+  // ─── SETTINGS ────────────────────────────────────────────────────────────────
+
+  function openSettings() {
+    renderSettings();
+    document.getElementById('settingsModal').classList.remove('hidden');
+  }
+
+  function renderSettings() {
+    const data = loadData();
+
+    document.getElementById('platformList').innerHTML = data.platforms.map(p => `
+      <div class="settings-item">
+        <span>${p}</span>
+        <button class="action-btn danger" onclick="removePlatform('${p}')">Remove</button>
+      </div>
+    `).join('');
+
+    document.getElementById('categoryList').innerHTML = data.categories.map(c => `
+      <div class="settings-item">
+        <span>${c.emoji} ${c.label}</span>
+        <button class="action-btn danger" onclick="removeCategory('${c.label}')">Remove</button>
+      </div>
+    `).join('');
+  }
+
+  async function addPlatform() {
+    const val = document.getElementById('newPlatform').value.trim();
+    if (!val) return;
+    const data = loadData();
+    if (!data.platforms.includes(val)) {
+      data.platforms.push(val);
+      await saveData(data);
+    }
+    document.getElementById('newPlatform').value = '';
+    renderSettings();
+    render();
+  }
+
+  async function removePlatform(name) {
+    const data = loadData();
+    data.platforms = data.platforms.filter(p => p !== name);
+    await saveData(data);
+    renderSettings();
+    render();
+  }
+
+  async function addCategory() {
+    const emoji = document.getElementById('newCategoryEmoji').value.trim() || '📚';
+    const label = document.getElementById('newCategoryLabel').value.trim();
+    if (!label) return;
+    const data = loadData();
+    if (!data.categories.find(c => c.label === label)) {
+      data.categories.push({ label, emoji });
+      await saveData(data);
+    }
+    document.getElementById('newCategoryEmoji').value = '';
+    document.getElementById('newCategoryLabel').value = '';
+    renderSettings();
+    render();
+  }
+
+  async function removeCategory(label) {
+    const data = loadData();
+    data.categories = data.categories.filter(c => c.label !== label);
+    await saveData(data);
+    renderSettings();
+    render();
+  }
+
+  // ─── UTILS ───────────────────────────────────────────────────────────────────
+
+  function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+  }
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.classList.add('hidden');
+    });
+  });
+
+  // ─── INIT ────────────────────────────────────────────────────────────────────
+
+  document.getElementById('welcomeState').style.display = 'flex';
+  document.getElementById('appContent').classList.add('hidden');
+
+  if (!hasFSA()) {
+    const note = document.getElementById('fallbackNote');
+    if (note) note.style.display = 'block';
+    const newBtn = document.getElementById('newFileBtn');
+    if (newBtn) newBtn.textContent = '+ Start Fresh';
+  }
+
+  // Expose functions to global scope for onclick handlers
+  window.openFile = openFile;
+  window.newFile = newFile;
+  window.exportFile = exportFile;
+  window.handleFallbackImport = handleFallbackImport;
+  window.openSettings = openSettings;
+  window.openAddModal = openAddModal;
+  window.openEditModal = openEditModal;
+  window.openDeleteModal = openDeleteModal;
+  window.saveItem = saveItem;
+  window.confirmDelete = confirmDelete;
+  window.cycleStatus = cycleStatus;
+  window.addPlatform = addPlatform;
+  window.removePlatform = removePlatform;
+  window.addCategory = addCategory;
+  window.removeCategory = removeCategory;
+  window.closeModal = closeModal;
+  window.applyFilters = applyFilters;
+</script>
+</body>
+</html>
